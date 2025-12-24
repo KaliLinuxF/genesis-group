@@ -36,24 +36,22 @@ export class EventsService {
     async saveBatch(events: Event[]): Promise<{ inserted: number; duplicates: number }> {
         if (events.length === 0) return { inserted: 0, duplicates: 0 };
 
-        const entities = events.map((event) =>
-            this.eventRepository.create({
-                eventId: event.eventId,
-                timestamp: new Date(event.timestamp),
-                version: event.version || 'v1',
-                source: event.source,
-                funnelStage: event.funnelStage,
-                eventType: event.eventType,
-                data: event.data,
-            }),
-        );
+        const entities = events.map((event) => ({
+            eventId: event.eventId,
+            timestamp: new Date(event.timestamp),
+            version: event.version || 'v1',
+            source: event.source,
+            funnelStage: event.funnelStage,
+            eventType: event.eventType,
+            data: event.data,
+        }));
 
         // Batch insert with ON CONFLICT DO NOTHING
         const result = await this.eventRepository
             .createQueryBuilder()
             .insert()
             .into(EventEntity)
-            .values(entities)
+            .values(entities as any)
             .orIgnore()
             .execute();
 
