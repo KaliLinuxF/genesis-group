@@ -121,6 +121,32 @@ The system exposes analytical APIs including:
 
 Analytics queries are implemented using raw SQL over JSONB for clarity and performance.
 
+## API Documentation
+
+The external API is documented with Swagger/OpenAPI.
+
+**Access Swagger UI:**
+
+```
+http://localhost:3000/api
+```
+
+**What's documented:**
+
+- **Webhook endpoints** - Event ingestion API
+- **Analytics endpoints** - All reporting and analytics queries
+- **Health checks** - Liveness and readiness probes
+
+**What's NOT documented:**
+
+Swagger intentionally documents only the HTTP API contract. Internal components are excluded:
+
+- NATS consumers and message processing
+- Internal services and event handlers
+- Prometheus metrics endpoint
+
+This follows the principle that Swagger describes HTTP contracts, not internal architecture or asynchronous processing.
+
 ## Scalability
 
 The system is horizontally scalable:
@@ -166,12 +192,13 @@ docker-compose up
 
 This starts:
 
-- API service
+- API service (http://localhost:3000)
+- Swagger UI (http://localhost:3000/api)
 - NATS JetStream
 - PostgreSQL
 - Event publisher (for load testing)
-- Prometheus
-- Grafana
+- Prometheus (http://localhost:9090)
+- Grafana (http://localhost:3001)
 
 **Environment variables:**
 
