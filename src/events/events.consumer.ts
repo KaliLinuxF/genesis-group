@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { AckPolicy, Codec, DeliverPolicy } from 'nats';
+import { AckPolicy, Codec, Consumer, DeliverPolicy, JsMsg } from 'nats';
 import { NatsService } from '../nats/nats.service';
 import { EventsService } from './events.service';
 import { PrometheusService } from '../prometheus/prometheus.service';
@@ -88,7 +88,7 @@ export class EventsConsumer implements OnModuleInit, OnModuleDestroy {
         }
     }
 
-    private monitorConsumerMetrics(consumer: any) {
+    private monitorConsumerMetrics(consumer: Consumer) {
         this.metricsInterval = setInterval(async () => {
             if (!this.running) {
                 return;
@@ -104,7 +104,7 @@ export class EventsConsumer implements OnModuleInit, OnModuleDestroy {
         }, METRICS_INTERVAL_MS);
     }
 
-    private async processInBatches(consumer: any, codec: Codec<unknown>) {
+    private async processInBatches(consumer: Consumer, codec: Codec<unknown>) {
         while (this.running) {
             try {
                 const messages = await consumer.fetch({
@@ -112,7 +112,7 @@ export class EventsConsumer implements OnModuleInit, OnModuleDestroy {
                     expires: FETCH_EXPIRES_MS,
                 });
 
-                const messagesToProcess: any[] = [];
+                const messagesToProcess: JsMsg[] = [];
 
                 for await (const msg of messages) {
                     messagesToProcess.push(msg);
@@ -129,9 +129,9 @@ export class EventsConsumer implements OnModuleInit, OnModuleDestroy {
         }
     }
 
-    private async processBatch(messages: any[], codec: Codec<unknown>) {
+    private async processBatch(messages: JsMsg[], codec: Codec<unknown>) {
         const events: Event[] = [];
-        const messageEventMap = new Map<any, Event>();
+        const messageEventMap = new Map<JsMsg, Event>();
 
         for (const msg of messages) {
             try {
@@ -172,7 +172,7 @@ export class EventsConsumer implements OnModuleInit, OnModuleDestroy {
         }
     }
 
-    private async processMessage(msg: any, event: Event) {
+    private async processMessage(msg: JsMsg, event: Event) {
         try {
             await this.eventsService.saveEvent(event);
             msg.ack();
@@ -190,7 +190,7 @@ export class EventsConsumer implements OnModuleInit, OnModuleDestroy {
         }
     }
 
-    private async handleFetchError(error: any) {
+    private async handleFetchError(error: Error) {
         if (!error.message?.includes('timeout') && !error.message?.includes('no messages')) {
             this.logger.error(`Batch fetch error: ${error.message}`);
         }

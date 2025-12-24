@@ -2,41 +2,16 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventEntity } from '../events/entities/event.entity';
-
-export interface TimeSeriesData {
-    date: string;
-    count: number;
-    source?: string;
-    eventType?: string;
-}
-
-export interface CountryBreakdown {
-    country: string;
-    eventCount: number;
-    uniqueUsers: number;
-    totalPurchases?: number;
-    totalRevenue?: number;
-}
-
-export interface FunnelAnalysis {
-    source: string;
-    topEvents: number;
-    bottomEvents: number;
-    conversionRate: number;
-}
-
-export interface EventTypeRanking {
-    source: string;
-    eventType: string;
-    count: number;
-}
-
-export interface TopEntity {
-    id: string;
-    name: string;
-    count: number;
-    metric?: number;
-}
+import {
+    TimeSeriesDataPoint,
+    CountryBreakdown,
+    FunnelAnalysis,
+    EventTypeRanking,
+    TopEntity,
+    OverallStats,
+    RevenueAnalysis,
+    EventSourceType,
+} from './interfaces/analytics.interface';
 
 @Injectable()
 export class AnalyticsService {
@@ -45,7 +20,7 @@ export class AnalyticsService {
         private readonly eventRepository: Repository<EventEntity>,
     ) {}
 
-    async getOverallStats() {
+    async getOverallStats(): Promise<OverallStats> {
         const [totalEvents, fbEvents, ttEvents, topEvents, bottomEvents] = await Promise.all([
             this.eventRepository.count(),
             this.eventRepository.count({ where: { source: 'facebook' } }),
@@ -68,8 +43,8 @@ export class AnalyticsService {
         };
     }
 
-    async getEventTimeSeries(hours: number = 24, source?: string): Promise<TimeSeriesData[]> {
-        const params: any[] = [hours];
+    async getEventTimeSeries(hours: number = 24, source?: string): Promise<TimeSeriesDataPoint[]> {
+        const params: (number | string)[] = [hours];
         let sourceFilter = '';
 
         if (source && source !== 'all') {
@@ -90,7 +65,7 @@ export class AnalyticsService {
 
         const results = await this.eventRepository.query(query, params);
 
-        return results.map((r: any) => ({
+        return results.map((r: { date: string; count: number }) => ({
             date: r.date,
             count: r.count,
         }));
@@ -110,14 +85,14 @@ export class AnalyticsService {
 
         const results = await this.eventRepository.query(query, [limit]);
 
-        return results.map((r: any) => ({
+        return results.map((r: { source: string; eventType: string; count: number }) => ({
             source: r.source,
             eventType: r.eventType,
             count: r.count,
         }));
     }
 
-    async getCountryBreakdown(source: 'facebook' | 'tiktok' | 'all' = 'all'): Promise<CountryBreakdown[]> {
+    async getCountryBreakdown(source: EventSourceType = 'all'): Promise<CountryBreakdown[]> {
         const params: any[] = [];
         let sourceFilter = '';
 
@@ -143,13 +118,21 @@ export class AnalyticsService {
 
         const results = await this.eventRepository.query(query, params);
 
-        return results.map((r: any) => ({
-            country: r.country,
-            eventCount: r.eventCount,
-            uniqueUsers: r.uniqueUsers,
-            totalPurchases: r.totalPurchases || 0,
-            totalRevenue: parseFloat(r.totalRevenue || 0),
-        }));
+        return results.map(
+            (r: {
+                country: string;
+                eventCount: number;
+                uniqueUsers: number;
+                totalPurchases: number;
+                totalRevenue: string;
+            }): CountryBreakdown => ({
+                country: r.country,
+                eventCount: r.eventCount,
+                uniqueUsers: r.uniqueUsers,
+                totalPurchases: r.totalPurchases || 0,
+                totalRevenue: parseFloat(r.totalRevenue) || 0,
+            }),
+        );
     }
 
     async getFunnelAnalysis(): Promise<FunnelAnalysis[]> {
@@ -166,7 +149,7 @@ export class AnalyticsService {
 
         const grouped = new Map<string, { top: number; bottom: number }>();
 
-        results.forEach((r: any) => {
+        results.forEach((r: { source: string; funnelStage: string; count: number }) => {
             if (!grouped.has(r.source)) {
                 grouped.set(r.source, { top: 0, bottom: 0 });
             }
@@ -203,15 +186,18 @@ export class AnalyticsService {
 
         const results = await this.eventRepository.query(query, ['facebook', limit]);
 
-        return results.map((r: any) => ({
+        return results.map((r: { id: string; name: string; count: number; metric: string }) => ({
             id: r.id,
             name: r.name,
             count: r.count,
-            metric: parseFloat(r.metric || 0),
+            metric: r.metric ? parseFloat(r.metric) : 0,
         }));
     }
 
-    async getTopUsers(source: 'facebook' | 'tiktok', limit: number = 10): Promise<TopEntity[]> {
+    async getTopUsers(
+        source: Extract<EventSourceType, 'facebook' | 'tiktok'>,
+        limit: number = 10,
+    ): Promise<TopEntity[]> {
         if (source === 'facebook') {
             const query = `
                 SELECT 
@@ -227,7 +213,7 @@ export class AnalyticsService {
 
             const results = await this.eventRepository.query(query, ['facebook', limit]);
 
-            return results.map((r: any) => ({
+            return results.map((r: { id: string; name: string; count: number }) => ({
                 id: r.id,
                 name: r.name,
                 count: r.count,
@@ -250,7 +236,7 @@ export class AnalyticsService {
 
             const results = await this.eventRepository.query(query, ['tiktok', limit]);
 
-            return results.map((r: any) => ({
+            return results.map((r: { id: string; name: string; count: number; metric: number }) => ({
                 id: r.id,
                 name: r.name,
                 count: r.count,
@@ -261,7 +247,7 @@ export class AnalyticsService {
         return [];
     }
 
-    async getRevenueAnalysis() {
+    async getRevenueAnalysis(): Promise<RevenueAnalysis> {
         const query = `
             SELECT 
                 source,
@@ -275,12 +261,16 @@ export class AnalyticsService {
 
         const results = await this.eventRepository.query(query);
 
-        const fbRevenue = results.find((r: any) => r.source === 'facebook') || {
+        const fbRevenue = results.find(
+            (r: { source: string; total: string; purchaseCount: number; average: string }) => r.source === 'facebook',
+        ) || {
             total: 0,
             purchaseCount: 0,
             average: 0,
         };
-        const ttRevenue = results.find((r: any) => r.source === 'tiktok') || { total: 0, purchaseCount: 0, average: 0 };
+        const ttRevenue = results.find(
+            (r: { source: string; total: string; purchaseCount: number; average: string }) => r.source === 'tiktok',
+        ) || { total: 0, purchaseCount: 0, average: 0 };
 
         return {
             facebook: {
