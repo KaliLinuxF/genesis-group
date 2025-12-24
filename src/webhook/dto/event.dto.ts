@@ -1,31 +1,39 @@
 import { IsString, IsNotEmpty, IsIn, IsObject, ValidateNested, IsNumber, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class BaseEventDto {
+    @ApiProperty({ description: 'Unique event identifier', example: 'evt_123456' })
     @IsString()
     @IsNotEmpty()
     eventId: string;
 
+    @ApiProperty({ description: 'Event timestamp in ISO format', example: '2023-12-01T10:30:00Z' })
     @IsString()
     @IsNotEmpty()
     timestamp: string;
 
+    @ApiProperty({ description: 'API version', example: 'v1', default: 'v1' })
     @IsString()
     @IsNotEmpty()
     version: string = 'v1';
 
+    @ApiProperty({ description: 'Event source platform', enum: ['facebook', 'tiktok'], example: 'facebook' })
     @IsString()
     @IsIn(['facebook', 'tiktok'])
     source: 'facebook' | 'tiktok';
 
+    @ApiProperty({ description: 'Funnel stage', enum: ['top', 'bottom'], example: 'top' })
     @IsString()
     @IsIn(['top', 'bottom'])
     funnelStage: 'top' | 'bottom';
 
+    @ApiProperty({ description: 'Type of event', example: 'page_view' })
     @IsString()
     @IsNotEmpty()
     eventType: string;
 
+    @ApiProperty({ description: 'Event-specific data payload' })
     @IsObject()
     data: any;
 }
