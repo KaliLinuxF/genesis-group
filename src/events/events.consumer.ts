@@ -136,6 +136,14 @@ export class EventsConsumer implements OnModuleInit, OnModuleDestroy {
         for (const msg of messages) {
             try {
                 const event = codec.decode(msg.data) as Event;
+
+                if (!event.eventId) {
+                    this.logger.error(`Event missing eventId, rejecting: ${JSON.stringify(event)}`);
+                    msg.term();
+                    this.prometheus.incrementEventsFailed(event?.source || 'unknown', 'missing_eventId');
+                    continue;
+                }
+
                 events.push(event);
                 messageEventMap.set(msg, event);
             } catch (error) {
