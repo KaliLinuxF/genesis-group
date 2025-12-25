@@ -167,6 +167,7 @@ export class EventsConsumer implements OnModuleInit, OnModuleDestroy {
             }
 
             if (duplicates > 0) {
+                this.prometheus.incrementEventsDuplicate('batch');
                 this.logger.log(`Batch: ${inserted} inserted, ${duplicates} duplicates`);
             }
         } catch (error) {

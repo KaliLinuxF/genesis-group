@@ -20,7 +20,7 @@ export class NatsService implements OnModuleInit, OnModuleDestroy {
             this.connection = await connect({
                 servers: natsUrl,
                 maxReconnectAttempts: -1,
-                reconnectTimeWait: 1000,
+                reconnectTimeWait: 5000,
             });
 
             this.jetstream = this.connection.jetstream();
@@ -57,7 +57,7 @@ export class NatsService implements OnModuleInit, OnModuleDestroy {
                 subjects: [`${prefix}.>`],
                 retention: RetentionPolicy.Limits,
                 max_age: 7 * 24 * 60 * 60 * 1_000_000_000,
-                max_bytes: 1_000_000_000,
+                max_bytes: 5_000_000_000,
                 storage: StorageType.File,
             });
             this.logger.log('Created EVENTS stream');

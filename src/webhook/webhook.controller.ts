@@ -17,6 +17,8 @@ export class WebhookController {
     @ApiBody({ type: BaseEventDto, isArray: true })
     @ApiResponse({ status: 202, description: 'Events accepted for processing' })
     @ApiResponse({ status: 400, description: 'Invalid event data' })
+    @ApiResponse({ status: 500, description: 'Internal server error' })
+    @ApiResponse({ status: 503, description: 'Service unavailable' })
     async receiveEvent(@Body() body: BaseEventDto | BaseEventDto[]): Promise<{ status: string }> {
         const events = Array.isArray(body) ? body : [body];
 
