@@ -107,7 +107,13 @@ export class AnalyticsService {
                 COUNT(*)::int as "eventCount",
                 COUNT(DISTINCT data->'user'->>'userId')::int as "uniqueUsers",
                 SUM(CASE WHEN (data->'engagement'->>'purchaseAmount')::text IS NOT NULL THEN 1 ELSE 0 END)::int as "totalPurchases",
-                SUM((data->'engagement'->>'purchaseAmount')::decimal) as "totalRevenue"
+                SUM(
+                    CASE 
+                        WHEN data->'engagement'->>'purchaseAmount' ~ '^[0-9]+(\.[0-9]+)?$' 
+                        THEN (data->'engagement'->>'purchaseAmount')::decimal 
+                        ELSE NULL 
+                    END
+                ) as "totalRevenue"
             FROM events
             WHERE COALESCE(data->'user'->'location'->>'country', data->'engagement'->>'country') IS NOT NULL
             ${sourceFilter}
@@ -175,7 +181,13 @@ export class AnalyticsService {
                 data->'engagement'->>'campaignId' as id,
                 data->'engagement'->>'campaignId' as name,
                 COUNT(*)::int as count,
-                SUM((data->'engagement'->>'purchaseAmount')::decimal) as metric
+                SUM(
+                    CASE 
+                        WHEN data->'engagement'->>'purchaseAmount' ~ '^[0-9]+(\.[0-9]+)?$' 
+                        THEN (data->'engagement'->>'purchaseAmount')::decimal 
+                        ELSE NULL 
+                    END
+                ) as metric
             FROM events
             WHERE source = $1
             AND data->'engagement'->>'campaignId' IS NOT NULL
@@ -226,7 +238,13 @@ export class AnalyticsService {
                     data->'user'->>'userId' as id,
                     data->'user'->>'username' as name,
                     COUNT(*)::int as count,
-                    MAX((data->'user'->>'followers')::int) as metric
+                    MAX(
+                        CASE 
+                            WHEN data->'user'->>'followers' ~ '^[0-9]+$' 
+                            THEN (data->'user'->>'followers')::int 
+                            ELSE NULL 
+                        END
+                    ) as metric
                 FROM events
                 WHERE source = $1
                 GROUP BY data->'user'->>'userId', data->'user'->>'username'
@@ -251,9 +269,21 @@ export class AnalyticsService {
         const query = `
             SELECT 
                 source,
-                SUM((data->'engagement'->>'purchaseAmount')::decimal) as total,
+                SUM(
+                    CASE 
+                        WHEN data->'engagement'->>'purchaseAmount' ~ '^[0-9]+(\.[0-9]+)?$' 
+                        THEN (data->'engagement'->>'purchaseAmount')::decimal 
+                        ELSE NULL 
+                    END
+                ) as total,
                 COUNT(CASE WHEN data->'engagement'->>'purchaseAmount' IS NOT NULL THEN 1 END)::int as "purchaseCount",
-                AVG((data->'engagement'->>'purchaseAmount')::decimal) as average
+                AVG(
+                    CASE 
+                        WHEN data->'engagement'->>'purchaseAmount' ~ '^[0-9]+(\.[0-9]+)?$' 
+                        THEN (data->'engagement'->>'purchaseAmount')::decimal 
+                        ELSE NULL 
+                    END
+                ) as average
             FROM events
             WHERE source IN ('facebook', 'tiktok')
             GROUP BY source

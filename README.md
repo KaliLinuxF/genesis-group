@@ -206,6 +206,22 @@ This starts:
 - `NATS_CONCURRENCY` - Parallel processing limit (default: 100)
 - `DATABASE_HOST` - PostgreSQL host
 - `NATS_URL` - NATS connection URL
+- `DB_POOL_MAX` - Maximum database connections (default: 150)
+- `DB_POOL_MIN` - Minimum database connections (default: 20)
+
+### Monitoring
+
+SQL queries for monitoring database performance are available in [docs/monitoring-queries.sql](docs/monitoring-queries.sql).
+
+Key metrics to monitor:
+- Active connections (should be < 150)
+- Cache hit ratio (should be > 95%)
+- Query execution times
+- Table bloat and vacuum status
+
+Access monitoring tools:
+- Prometheus metrics: http://localhost:9090
+- Grafana dashboards: http://localhost:3001
 
 ## Notes
 

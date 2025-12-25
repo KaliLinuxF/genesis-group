@@ -23,7 +23,7 @@ export class WebhookService {
                 this.prometheus.incrementEventsFailed(event.source, 'timeout');
                 return;
             }
-            
+
             this.prometheus.incrementEventsFailed(event.source, 'publish_error');
             this.logger.error(`Failed to publish event ${event.eventId}: ${error.message}`);
         }

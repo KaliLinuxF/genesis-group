@@ -29,6 +29,13 @@ import { PrometheusModule } from './prometheus/prometheus.module';
                 logging: configService.get('DB_LOGGING') === 'true',
                 migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
                 migrationsRun: true,
+                extra: {
+                    max: parseInt(configService.get('DB_POOL_MAX') || '150', 10),
+                    min: parseInt(configService.get('DB_POOL_MIN') || '20', 10),
+                    idleTimeoutMillis: 30000,
+                    connectionTimeoutMillis: 5000,
+                    statement_timeout: 30000,
+                },
             }),
             inject: [ConfigService],
         }),
