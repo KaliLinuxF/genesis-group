@@ -1,4 +1,5 @@
 import { Entity, Column, PrimaryColumn, Index, CreateDateColumn } from 'typeorm';
+import { Event } from '../../types/events.types';
 
 @Entity('events')
 @Index(['source', 'eventType'])
@@ -26,7 +27,7 @@ export class EventEntity {
     eventType: string;
 
     @Column({ type: 'jsonb' })
-    data: any;
+    data: Event['data'];
 
     @CreateDateColumn({ type: 'timestamp with time zone' })
     processedAt: Date;

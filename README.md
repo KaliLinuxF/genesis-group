@@ -108,6 +108,25 @@ This keeps ingestion simple and flexible.
 
 Analytical complexity is intentionally moved to the read side.
 
+### Database Indexes
+
+The system uses several indexes for optimal query performance:
+
+**Standard B-Tree Indexes:**
+- `idx_events_source_eventType` - Composite index for filtering by source and event type
+- `idx_events_funnelStage` - Funnel analysis queries
+- `idx_events_timestamp` - Time-series queries
+- `idx_events_eventId` (UNIQUE) - Deduplication
+
+**JSONB Indexes:**
+- `idx_events_data_gin` - GIN index for general JSONB queries
+- `idx_events_campaign_id` - Campaign analytics (functional index)
+- `idx_events_user_id` - User analytics (functional index)
+- `idx_events_country` - Geographic analytics (functional index with COALESCE)
+- `idx_events_purchase_amount` - Revenue analytics
+
+These indexes significantly improve analytics query performance on JSONB fields.
+
 ## Analytics & Reporting
 
 The system exposes analytical APIs including:
